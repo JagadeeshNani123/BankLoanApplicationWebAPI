@@ -37,7 +37,8 @@ namespace BankLoanApplicationWebAPI.Controllers
             var customerClient = new HttpClient();
             HttpResponseMessage respon = await customerClient.GetAsync(requestUri);
             string responJsonText = await respon.Content.ReadAsStringAsync();
-            CustomerModel? customer = JsonSerializer.Deserialize<CustomerModel?>(responJsonText);
+            CustomerModel? customer = !string.IsNullOrEmpty(responJsonText)
+                ? JsonSerializer.Deserialize<CustomerModel?>(responJsonText): new CustomerModel();
             return customer;
         }
 
@@ -78,6 +79,47 @@ namespace BankLoanApplicationWebAPI.Controllers
 
             var customerClient = new HttpClient();
             await customerClient.DeleteAsync(requestUri);
+        }
+
+        [HttpGet]
+        [Route("/CheckUserExistsOrNot/{emailId}")]
+        public bool CheckUserExistsOrNot(string emailId)
+        {
+            var isExistedUser = false;
+            var allCustomers = GetAllCustomers();
+            if (allCustomers.Result != null && allCustomers.Result.Count != 0)
+            {
+                isExistedUser = allCustomers.Result.Any(customer => customer.EmailAddress.Equals(emailId, StringComparison.CurrentCultureIgnoreCase));
+            }
+            return isExistedUser;
+        }
+
+        [HttpGet]
+        [Route("/GetCustomerByEmailId/{emailId}")]
+        public CustomerModel? GetCustomerByEmailId(string emailId)
+        {
+            CustomerModel? customer = null;
+            var allCustomers = GetAllCustomers();
+            if (allCustomers.Result != null && allCustomers.Result.Count != 0)
+            {
+                customer = allCustomers.Result.FirstOrDefault(customer => customer.EmailAddress.Equals(emailId, StringComparison.CurrentCultureIgnoreCase));
+            }
+            return customer;
+        }
+
+
+        [HttpGet]
+        [Route("/IsValidUser/{emailId}/{password}")]
+        public bool IsValidUser(string emailId, string password)
+        {
+            var isValidUser = false;
+            var allCustomers = GetAllCustomers();
+            if (allCustomers.Result != null && allCustomers.Result.Count != 0)
+            {
+                isValidUser = allCustomers.Result.Any(customer => customer.EmailAddress.Equals(emailId, StringComparison.CurrentCultureIgnoreCase) && 
+                customer.Password.Equals(password));
+            }
+            return isValidUser;
         }
     }
 }

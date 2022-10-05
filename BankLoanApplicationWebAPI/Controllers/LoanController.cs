@@ -40,6 +40,21 @@ namespace BankLoanApplicationWebAPI.Controllers
             return loan;
         }
 
+        // GET api/<CustomerServiceController>/5
+        [HttpGet]
+        [Route("GetAllLoansByCustomerId")]
+        public async Task<List<LoanModel>?> GetAllLoansByCustomerId(string id)
+        {
+            var allLoans = GetAllLoans();
+            List<LoanModel>? customerLoans = null;
+            if(allLoans.Result!=null && allLoans.Result.Count!=0)
+            {
+                var customerId = new Guid(id);
+                customerLoans = allLoans.Result.Where(all => all.CustomerId == customerId).ToList();
+            }
+            return customerLoans;
+        }
+
         // POST api/<CustomerServiceController>
         [HttpPost]
         public async Task PostLoan(LoanModel loan)
@@ -61,11 +76,11 @@ namespace BankLoanApplicationWebAPI.Controllers
             string serviceUrl = loanServiceUrl + "UpdateLoan/" + id;
             Uri requestUri = new Uri(serviceUrl); //replace your Url  
 
-            var customerClient = new HttpClient();
+            var loanClient = new HttpClient();
             var json = JsonSerializer.Serialize(loan);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            var response = await customerClient.PutAsync(requestUri, content);
+            var response = await loanClient.PutAsync(requestUri, content);
         }
 
         // DELETE api/<CustomerServiceController>/5
@@ -75,23 +90,21 @@ namespace BankLoanApplicationWebAPI.Controllers
             string serviceUrl = loanServiceUrl + "DeleteLoan/" + id;
             Uri requestUri = new Uri(serviceUrl); //replace your Url  
 
-            var customerClient = new HttpClient();
-            await customerClient.DeleteAsync(requestUri);
+            var loanClient = new HttpClient();
+            await loanClient.DeleteAsync(requestUri);
         }
 
         [HttpGet]
         [Route("GetOverAllLoanAmountOnExistingLoans")]
-        public async Task<LoanModel?> GetLoanById(string id)
+        public decimal GetOverAllLoanAmountOnExistingLoans(string id)
         {
-            string serviceUrl = loanServiceUrl + "GetLoanById/" + id;
-            Uri requestUri = new Uri(serviceUrl); //replace your Url  
-
-            var loanClient = new HttpClient();
-            HttpResponseMessage respon = await loanClient.GetAsync(requestUri);
-            string responJsonText = await respon.Content.ReadAsStringAsync();
-            LoanModel? loan = !string.IsNullOrEmpty(responJsonText)
-                ? JsonSerializer.Deserialize<LoanModel?>(responJsonText) : new LoanModel();
-            return loan;
+            var allLons = GetAllLoans();
+            var overAllLoanAmount = 0m;
+            if (allLons.Result != null && allLons.Result.Count != 0)
+            {
+                overAllLoanAmount = allLons.Result.Sum(all => all.LoanAmount);
+            }
+            return overAllLoanAmount;
         }
     }
 }
